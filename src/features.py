@@ -30,7 +30,7 @@ class PowerBandExtractor(BaseEstimator, TransformerMixin):
         n_features = n_channels * n_bands
         X_features = np.zeros((n_epochs, n_features))
         
-        print(f"Extraction des puissances spectrales (Fourier) pour {n_epochs} époques...")
+        print(f"Extracting spectral power features (Fourier) for {n_epochs} epochs...")
         
         for i in range(n_epochs):
             for j in range(n_channels):
