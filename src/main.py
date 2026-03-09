@@ -3,9 +3,7 @@ from preprocessing import preprocessing
 import matplotlib
 matplotlib.use('qtagg')
 import matplotlib.pyplot as plt
-from sklearn.pipeline import Pipeline
-from sklearn.svm import SVC
-from features import PowerBandExtractor
+from pipeline_config import build_pipeline, parse_runs
 
 def main():
     parser = argparse.ArgumentParser(description="BCI Pipeline using Machine Learning.")
@@ -16,14 +14,11 @@ def main():
     
     args = parser.parse_args()
     
-    if 'all' in [r.lower() for r in args.runs]:
-        target_runs = list(range(1, 15))
-    else:
-        try:
-            target_runs = [int(r) for r in args.runs]
-        except ValueError:
-            print("Error : Invalid run numbers.")
-            return
+    try:
+        target_runs = parse_runs(args.runs)
+    except ValueError:
+        print("Error : Invalid run numbers.")
+        return
             
     X, y = preprocessing(subject_id=args.subject, runs=target_runs, base_path=args.path, plot=args.plot)
     
@@ -34,11 +29,7 @@ def main():
         
         print("\n--- 2. CREATION OF THE PIPELINE ---")
         
-        pipeline = Pipeline([
-            ('feature_extraction', PowerBandExtractor()),
-            # ('dimensionality_reduction', ...), #Todo: : add my CSP here
-            ('classifier', SVC(kernel='linear'))
-        ])
+        pipeline = build_pipeline()
         
         extractor = pipeline.named_steps['feature_extraction']
         X_2D = extractor.fit_transform(X)
