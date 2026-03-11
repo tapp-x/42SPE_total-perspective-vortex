@@ -1,5 +1,5 @@
 import argparse
-from preprocessing import preprocessing
+from preprocessing import load_subject_epochs
 import matplotlib
 matplotlib.use('qtagg')
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ def main():
         print("Error : Invalid run numbers.")
         return
             
-    X, y = preprocessing(subject_id=args.subject, runs=target_runs, base_path=args.path, plot=args.plot)
+    X, y = load_subject_epochs(subject_id=args.subject, runs=target_runs, base_path=args.path, plot=args.plot)
     
     if X is not None:
         print("\n--- PREPROCESSING COMPLETE ---")

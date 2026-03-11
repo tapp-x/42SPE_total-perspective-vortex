@@ -6,7 +6,7 @@ from joblib import load
 from sklearn.metrics import accuracy_score
 
 from pipeline_config import parse_runs
-from preprocessing import preprocessing
+from preprocessing import load_subject_epochs
 
 
 def default_model_path(subject, runs):
@@ -38,7 +38,7 @@ def main():
     bundle = load(model_path)
     pipeline = bundle["pipeline"]
 
-    X, y = preprocessing(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
+    X, y = load_subject_epochs(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
     if X is None or y is None:
         print("No data loaded. Check subject/runs/path.")
         return

@@ -7,10 +7,10 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
 from pipeline_config import build_pipeline, parse_runs
-from preprocessing import preprocessing
+from preprocessing import load_subject_epochs
 
 
-def infer_cv_folds(y, requested_cv):
+def get_valid_stratified_cv_folds(y, requested_cv):
     _, counts = np.unique(y, return_counts=True)
     min_class_count = int(np.min(counts))
     return max(2, min(requested_cv, min_class_count))
@@ -44,7 +44,7 @@ def main():
     args = parser.parse_args()
 
     runs = parse_runs(args.runs)
-    X, y = preprocessing(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
+    X, y = load_subject_epochs(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
 
     if X is None or y is None:
         print("No data loaded. Check subject/runs/path.")

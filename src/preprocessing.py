@@ -6,7 +6,7 @@ import warnings
 # We ignore warnings to keep the output clean, especially from MNE which can be verbose
 warnings.filterwarnings('ignore')
 
-def extract_features_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
+def load_epochs_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
     """
     Load an EDF file, apply band-pass filtering, extract epochs for T1 and T2 events, 
     and return the data as numpy arrays.
@@ -43,7 +43,7 @@ def extract_features_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
     return X, y
 
 
-def preprocessing(subject_id, runs, base_path=None, plot=False):
+def load_subject_epochs(subject_id, runs, base_path=None, plot=False):
     """
     Load and process data for a specific subject and specified runs.
     """
@@ -66,7 +66,7 @@ def preprocessing(subject_id, runs, base_path=None, plot=False):
             continue
             
         show_plot = plot and len(X_list) == 0 
-        X_run, y_run = extract_features_from_edf(filepath, plot=show_plot)
+        X_run, y_run = load_epochs_from_edf(filepath, plot=show_plot)
         
         if X_run is not None and y_run is not None:
             X_list.append(X_run)
