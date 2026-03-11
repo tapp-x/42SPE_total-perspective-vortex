@@ -11,6 +11,8 @@ def main():
     parser.add_argument("runs", type=str, nargs='+', help="List of runs to process (e.g., 4 8 12) or 'all'")
     parser.add_argument("--path", type=str, default=None, help="Base path to the dataset")
     parser.add_argument("--plot", action="store_true", help="Visualize raw and filtered data for the first run")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=10, help="Number of components for PCA or CSP")
     
     args = parser.parse_args()
     
@@ -29,12 +31,12 @@ def main():
         
         print("\n--- 2. CREATION OF THE PIPELINE ---")
         
-        pipeline = build_pipeline()
-        
-        extractor = pipeline.named_steps['feature_extraction']
-        X_2D = extractor.fit_transform(X)
-        
-        print(f"Shape of X after Fourier (2D) : {X_2D.shape}") 
+        pipeline = build_pipeline(dim_red=args.dim_red, n_components=args.n_components)
+
+            if args.dim_red == "pca":
+                reducer = pipeline.named_steps["dimensionality_reduction"]
+                X_reduced = reducer.fit_transform(X_2D)
+                print(f"Shape of X after PCA ({args.n_components} components): {X_reduced.shape}")
 
 if __name__ == "__main__":
     main()

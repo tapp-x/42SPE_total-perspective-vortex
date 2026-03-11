@@ -6,7 +6,7 @@ from joblib import dump
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
-from pipeline_config import build_pipeline, parse_runs
+from pipeline_config import build_pipeline, parse_runs, pipeline_suffix
 from preprocessing import load_subject_epochs
 
 
@@ -35,6 +35,8 @@ def main():
     )
     parser.add_argument("--cvs", type=int, default=5, help="Cross-validation folds")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=10, help="Number of PCA or CSP components")
     parser.add_argument(
         "--model-out",
         type=str,
@@ -59,10 +61,11 @@ def main():
     print(f"X shape (epochs, channels, time): {X.shape}")
     print(f"y shape: {y.shape}")
     print(f"Classes: {classes.tolist()}")
+    print(f"Dimensionality reduction: {args.dim_red}")
 
-    cv_folds = infer_cv_folds(y, args.cvs)
+    cv_folds = get_valid_stratified_cv_folds(y, args.cvs)
     skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=args.seed)
-    pipeline = build_pipeline()
+    pipeline = build_pipeline(dim_red=args.dim_red, n_components=args.n_components)
     cv_scores = cross_val_score(pipeline, X, y, cv=skf, scoring="accuracy")
 
     print("\n--- CROSS VALIDATION ---")
@@ -104,7 +107,8 @@ def main():
 
     if args.model_out is None:
         runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
-        model_out = f"models/s{args.subject:03d}_runs_{runs_slug}.joblib"
+        variant_slug = pipeline_suffix(args.dim_red, args.n_components)
+        model_out = f"models/s{args.subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
     else:
         model_out = args.model_out
 
@@ -114,6 +118,8 @@ def main():
             "pipeline": pipeline,
             "subject": args.subject,
             "runs": runs,
+            "dim_red": args.dim_red,
+            "n_components": args.n_components,
             "cv_scores": cv_scores,
             "val_accuracy": val_acc,
             "test_accuracy": test_acc,

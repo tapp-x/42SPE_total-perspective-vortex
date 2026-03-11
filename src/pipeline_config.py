@@ -1,3 +1,4 @@
+from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -14,11 +15,24 @@ def parse_runs(runs_arg):
         raise ValueError("Invalid run values. Use run numbers or 'all'.") from exc
 
 
-def build_pipeline():
-    return Pipeline(
-        [
-            ("feature_extraction", PowerBandExtractor()),
+def pipeline_suffix(dim_red, n_components):
+    if dim_red == "pca":
+        return f"pca{n_components}"
+    if dim_red == "csp":
+        return f"csp{n_components}"
+    return "base"
+
+def build_pipeline(dim_red="none", n_components=10):
             ("scaler", StandardScaler()),
             ("classifier", SVC(kernel="linear")),
         ]
-    )
+    steps = [
+        ("feature_extraction", PowerBandExtractor()),
+        ("scaler", StandardScaler()),
+    ]
+
+    if dim_red == "pca":
+        steps.append(("dimensionality_reduction", PCA(n_components=n_components)))
+
+    steps.append(("classifier", SVC(kernel="linear")))
+    return Pipeline(steps)
