@@ -1,5 +1,6 @@
 import argparse
 import os
+from dataclasses import dataclass
 
 import numpy as np
 from joblib import dump
@@ -10,10 +11,134 @@ from pipeline_config import build_pipeline, parse_runs, pipeline_suffix
 from preprocessing import load_subject_epochs
 
 
+@dataclass
+class TrainingResult:
+    pipeline: object
+    subject: int
+    runs: list
+    dim_red: str
+    n_components: int
+    cv_scores: np.ndarray
+    val_accuracy: float
+    test_accuracy: float
+    n_epochs: int
+    classes: list
+
+
 def get_valid_stratified_cv_folds(y, requested_cv):
     _, counts = np.unique(y, return_counts=True)
     min_class_count = int(np.min(counts))
     return max(2, min(requested_cv, min_class_count))
+
+
+def default_model_path(subject, runs, dim_red, n_components):
+    runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
+    variant_slug = pipeline_suffix(dim_red, n_components)
+    return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
+
+
+def train_and_evaluate(
+    subject,
+    runs,
+    base_path=None,
+    test_size=0.2,
+    val_size=0.2,
+    cvs=5,
+    seed=42,
+    dim_red="none",
+    n_components=10,
+    verbose=True,
+):
+    X, y = load_subject_epochs(subject_id=subject, runs=runs, base_path=base_path, plot=False)
+
+    if X is None or y is None:
+        raise ValueError("No data loaded. Check subject/runs/path.")
+
+    classes = np.unique(y)
+    if len(classes) < 2:
+        raise ValueError(f"Need at least 2 classes to train, found: {classes.tolist()}")
+
+    if verbose:
+        print("\n--- DATA SUMMARY ---")
+        print(f"X shape (epochs, channels, time): {X.shape}")
+        print(f"y shape: {y.shape}")
+        print(f"Classes: {classes.tolist()}")
+        print(f"Dimensionality reduction: {dim_red}")
+
+    cv_folds = get_valid_stratified_cv_folds(y, cvs)
+    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=seed)
+    pipeline = build_pipeline(dim_red=dim_red, n_components=n_components)
+    cv_scores = cross_val_score(pipeline, X, y, cv=skf, scoring="accuracy")
+
+    if verbose:
+        print("\n--- CROSS VALIDATION ---")
+        print(f"Scores: {np.round(cv_scores, 4)}")
+        print(f"Mean accuracy: {cv_scores.mean():.4f}")
+
+    X_train_val, X_test, y_train_val, y_test = train_test_split(
+        X,
+        y,
+        test_size=test_size,
+        random_state=seed,
+        stratify=y,
+    )
+
+    val_ratio_in_train_val = val_size / (1.0 - test_size)
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_val,
+        y_train_val,
+        test_size=val_ratio_in_train_val,
+        random_state=seed,
+        stratify=y_train_val,
+    )
+
+    if verbose:
+        print("\n--- SPLIT ---")
+        print(f"Train: {X_train.shape[0]} epochs")
+        print(f"Val:   {X_val.shape[0]} epochs")
+        print(f"Test:  {X_test.shape[0]} epochs")
+
+    pipeline.fit(X_train, y_train)
+    y_val_pred = pipeline.predict(X_val)
+    y_test_pred = pipeline.predict(X_test)
+
+    val_acc = accuracy_score(y_val, y_val_pred)
+    test_acc = accuracy_score(y_test, y_test_pred)
+
+    if verbose:
+        print("\n--- HOLDOUT METRICS ---")
+        print(f"Validation accuracy: {val_acc:.4f}")
+        print(f"Test accuracy:       {test_acc:.4f}")
+
+    return TrainingResult(
+        pipeline=pipeline,
+        subject=subject,
+        runs=runs,
+        dim_red=dim_red,
+        n_components=n_components,
+        cv_scores=cv_scores,
+        val_accuracy=val_acc,
+        test_accuracy=test_acc,
+        n_epochs=X.shape[0],
+        classes=classes.tolist(),
+    )
+
+
+def save_training_result(result, model_out):
+    os.makedirs(os.path.dirname(model_out), exist_ok=True)
+    dump(
+        {
+            "pipeline": result.pipeline,
+            "subject": result.subject,
+            "runs": result.runs,
+            "dim_red": result.dim_red,
+            "n_components": result.n_components,
+            "cv_scores": result.cv_scores,
+            "val_accuracy": result.val_accuracy,
+            "test_accuracy": result.test_accuracy,
+        },
+        model_out,
+    )
 
 
 def main():
@@ -46,86 +171,25 @@ def main():
     args = parser.parse_args()
 
     runs = parse_runs(args.runs)
-    X, y = load_subject_epochs(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
-
-    if X is None or y is None:
-        print("No data loaded. Check subject/runs/path.")
-        return
-
-    classes = np.unique(y)
-    if len(classes) < 2:
-        print(f"Need at least 2 classes to train, found: {classes.tolist()}")
-        return
-
-    print("\n--- DATA SUMMARY ---")
-    print(f"X shape (epochs, channels, time): {X.shape}")
-    print(f"y shape: {y.shape}")
-    print(f"Classes: {classes.tolist()}")
-    print(f"Dimensionality reduction: {args.dim_red}")
-
-    cv_folds = get_valid_stratified_cv_folds(y, args.cvs)
-    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=args.seed)
-    pipeline = build_pipeline(dim_red=args.dim_red, n_components=args.n_components)
-    cv_scores = cross_val_score(pipeline, X, y, cv=skf, scoring="accuracy")
-
-    print("\n--- CROSS VALIDATION ---")
-    print(f"Scores: {np.round(cv_scores, 4)}")
-    print(f"Mean accuracy: {cv_scores.mean():.4f}")
-
-    X_train_val, X_test, y_train_val, y_test = train_test_split(
-        X,
-        y,
+    result = train_and_evaluate(
+        subject=args.subject,
+        runs=runs,
+        base_path=args.path,
         test_size=args.test_size,
-        random_state=args.seed,
-        stratify=y,
+        val_size=args.val_size,
+        cvs=args.cvs,
+        seed=args.seed,
+        dim_red=args.dim_red,
+        n_components=args.n_components,
+        verbose=True,
     )
-
-    val_ratio_in_train_val = args.val_size / (1.0 - args.test_size)
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val,
-        y_train_val,
-        test_size=val_ratio_in_train_val,
-        random_state=args.seed,
-        stratify=y_train_val,
-    )
-
-    print("\n--- SPLIT ---")
-    print(f"Train: {X_train.shape[0]} epochs")
-    print(f"Val:   {X_val.shape[0]} epochs")
-    print(f"Test:  {X_test.shape[0]} epochs")
-
-    pipeline.fit(X_train, y_train)
-    y_val_pred = pipeline.predict(X_val)
-    y_test_pred = pipeline.predict(X_test)
-
-    val_acc = accuracy_score(y_val, y_val_pred)
-    test_acc = accuracy_score(y_test, y_test_pred)
-
-    print("\n--- HOLDOUT METRICS ---")
-    print(f"Validation accuracy: {val_acc:.4f}")
-    print(f"Test accuracy:       {test_acc:.4f}")
 
     if args.model_out is None:
-        runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
-        variant_slug = pipeline_suffix(args.dim_red, args.n_components)
-        model_out = f"models/s{args.subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
+        model_out = default_model_path(args.subject, runs, args.dim_red, args.n_components)
     else:
         model_out = args.model_out
 
-    os.makedirs(os.path.dirname(model_out), exist_ok=True)
-    dump(
-        {
-            "pipeline": pipeline,
-            "subject": args.subject,
-            "runs": runs,
-            "dim_red": args.dim_red,
-            "n_components": args.n_components,
-            "cv_scores": cv_scores,
-            "val_accuracy": val_acc,
-            "test_accuracy": test_acc,
-        },
-        model_out,
-    )
+    save_training_result(result, model_out)
     print(f"\nModel saved to: {model_out}")
 
 
