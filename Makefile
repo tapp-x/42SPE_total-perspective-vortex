@@ -23,7 +23,7 @@ MNE_HOME = $(RUNTIME_ROOT)/mne
 
 .DEFAULT_GOAL := help
 
-.PHONY: help venv install main train predict check-env clean clean-local-runtime
+.PHONY: help venv install main train predict benchmark check-env clean clean-local-runtime
 
 help:
 	@echo "Commands:"
@@ -33,6 +33,7 @@ help:
 	@echo "  make plot SUBJECT=1 RUNS='4'"
 	@echo "  make train SUBJECT=1 RUNS='4' DIM_RED=pca N_COMPONENTS=10"
 	@echo "  make train SUBJECT=1 RUNS='4' DIM_RED=csp N_COMPONENTS=4"
+	@echo "  make benchmark SUBJECT=1 RUNS='4'"
 	@echo "  make install"
 
 venv:
@@ -61,6 +62,11 @@ predict:
 	mkdir -p "$(RUNTIME_HOME)"
 	mkdir -p "$(MNE_HOME)"
 	HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)" src/predict.py "$(SUBJECT)" $(RUNS) --path "$(DATA_PATH)" --dim-red "$(DIM_RED)" --n-components "$(N_COMPONENTS)" $(if $(MODEL_OUT),--model "$(MODEL_OUT)")
+
+benchmark:
+	mkdir -p "$(RUNTIME_HOME)"
+	mkdir -p "$(MNE_HOME)"
+	HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)" src/benchmark.py "$(SUBJECT)" $(RUNS) --path "$(DATA_PATH)" --cvs "$(CVS)" --test-size "$(TEST_SIZE)" --val-size "$(VAL_SIZE)" --seed "$(SEED)"
 
 check-env:
 	@echo "SUBJECT=$(SUBJECT)"
