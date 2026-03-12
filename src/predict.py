@@ -5,13 +5,14 @@ import numpy as np
 from joblib import load
 from sklearn.metrics import accuracy_score
 
-from pipeline_config import parse_runs
+from pipeline_config import parse_runs, pipeline_suffix
 from preprocessing import load_subject_epochs
 
 
-def default_model_path(subject, runs):
+def default_model_path(subject, runs, dim_red, n_components):
     runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
-    return f"models/s{subject:03d}_runs_{runs_slug}.joblib"
+    variant_slug = pipeline_suffix(dim_red, n_components)
+    return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
 
 
 def main():
@@ -25,6 +26,8 @@ def main():
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
     parser.add_argument("--model", type=str, default=None, help="Path to trained model (.joblib)")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=10, help="Number of PCA or CSP components")
     parser.add_argument(
         "--max-latency",
         type=float,
@@ -34,7 +37,7 @@ def main():
     args = parser.parse_args()
 
     runs = parse_runs(args.runs)
-    model_path = args.model or default_model_path(args.subject, runs)
+    model_path = args.model or default_model_path(args.subject, runs, args.dim_red, args.n_components)
     bundle = load(model_path)
     pipeline = bundle["pipeline"]
 
