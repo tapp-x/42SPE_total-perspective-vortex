@@ -3,6 +3,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
+from csp import CSPTransformer
 from features import PowerBandExtractor
 
 
@@ -22,10 +23,16 @@ def pipeline_suffix(dim_red, n_components):
         return f"csp{n_components}"
     return "base"
 
+
 def build_pipeline(dim_red="none", n_components=10):
+    if dim_red == "csp":
+        steps = [
+            ("dimensionality_reduction", CSPTransformer(n_components=n_components)),
             ("scaler", StandardScaler()),
             ("classifier", SVC(kernel="linear")),
         ]
+        return Pipeline(steps)
+
     steps = [
         ("feature_extraction", PowerBandExtractor()),
         ("scaler", StandardScaler()),

@@ -33,6 +33,15 @@ def main():
         
         pipeline = build_pipeline(dim_red=args.dim_red, n_components=args.n_components)
 
+        if args.dim_red == "csp":
+            reducer = pipeline.named_steps["dimensionality_reduction"]
+            X_reduced = reducer.fit_transform(X, y)
+            print(f"Shape of X after CSP ({args.n_components} components): {X_reduced.shape}")
+        else:
+            extractor = pipeline.named_steps["feature_extraction"]
+            X_2D = extractor.fit_transform(X)
+            print(f"Shape of X after Fourier (2D) : {X_2D.shape}")
+
             if args.dim_red == "pca":
                 reducer = pipeline.named_steps["dimensionality_reduction"]
                 X_reduced = reducer.fit_transform(X_2D)
