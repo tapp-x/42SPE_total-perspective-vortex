@@ -23,7 +23,7 @@ MNE_HOME = $(RUNTIME_ROOT)/mne
 
 .DEFAULT_GOAL := help
 
-.PHONY: help venv install main train predict benchmark check-env clean clean-local-runtime
+.PHONY: help venv install main train predict benchmark import-data check-env clean clean-local-runtime
 
 help:
 	@echo "Commands:"
@@ -34,6 +34,7 @@ help:
 	@echo "  make train SUBJECT=1 RUNS='4' DIM_RED=pca N_COMPONENTS=10"
 	@echo "  make train SUBJECT=1 RUNS='4' DIM_RED=csp N_COMPONENTS=4"
 	@echo "  make benchmark SUBJECT=1 RUNS='4'"
+	@echo "  make import-data SUBJECT=1 RUNS='4'"
 	@echo "  make install"
 
 venv:
@@ -66,7 +67,12 @@ predict:
 benchmark:
 	mkdir -p "$(RUNTIME_HOME)"
 	mkdir -p "$(MNE_HOME)"
-	HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)" src/benchmark.py "$(SUBJECT)" $(RUNS) --path "$(DATA_PATH)" --cvs "$(CVS)" --test-size "$(TEST_SIZE)" --val-size "$(VAL_SIZE)" --seed "$(SEED)"
+	HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)" src/benchmark.py --subjects $(SUBJECT) --runs $(RUNS) --path "$(DATA_PATH)" --cvs "$(CVS)" --test-size "$(TEST_SIZE)" --val-size "$(VAL_SIZE)" --seed "$(SEED)" --quiet
+
+import-data:
+	mkdir -p "$(RUNTIME_HOME)"
+	mkdir -p "$(MNE_HOME)"
+	HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)" src/import_data.py --subjects $(SUBJECT) --runs $(RUNS) --path "$(DATA_PATH)"
 
 check-env:
 	@echo "SUBJECT=$(SUBJECT)"
