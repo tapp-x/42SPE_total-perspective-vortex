@@ -1,5 +1,7 @@
 import argparse
+import contextlib
 import csv
+import io
 import os
 
 from pipeline_config import parse_runs
@@ -7,9 +9,13 @@ from train import train_and_evaluate
 
 
 def parse_subjects(subject_args):
-    if "all" in [value.lower() for value in subject_args]:
+    normalized_subjects = []
+    for value in subject_args:
+        normalized_subjects.extend(value.split())
+
+    if "all" in [value.lower() for value in normalized_subjects]:
         return list(range(1, 110))
-    return [int(value) for value in subject_args]
+    return [int(value) for value in normalized_subjects]
 
 
 def parse_variant_specs(specs):
@@ -29,7 +35,7 @@ def parse_variant_specs(specs):
 def default_output_path(subjects, runs):
     subject_slug = "all" if len(subjects) > 3 else "-".join(f"{subject:03d}" for subject in subjects)
     runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{run:02d}" for run in runs)
-    return f"resuts/benchmark_subjects_{subject_slug}_runs_{runs_slug}.csv"
+    return f"results/benchmark_subjects_{subject_slug}_runs_{runs_slug}.csv"
 
 
 def write_rows_to_csv(output_path, rows):
@@ -53,18 +59,120 @@ def write_rows_to_csv(output_path, rows):
         writer.writerows(rows)
 
 
+def aggregate_rows(rows):
+    grouped = {}
+    for row in rows:
+        key = (row["dim_red"], row["n_components"])
+        grouped.setdefault(
+            key,
+            {
+                "dim_red": row["dim_red"],
+                "n_components": row["n_components"],
+                "runs": row["runs"],
+                "subjects": [],
+                "cv_mean_values": [],
+                "val_accuracy_values": [],
+                "test_accuracy_values": [],
+            },
+        )
+        grouped[key]["subjects"].append(row["subject"])
+        grouped[key]["cv_mean_values"].append(float(row["cv_mean"]))
+        grouped[key]["val_accuracy_values"].append(float(row["val_accuracy"]))
+        grouped[key]["test_accuracy_values"].append(float(row["test_accuracy"]))
+
+    summary_rows = []
+    for grouped_row in grouped.values():
+        subject_count = len(set(grouped_row["subjects"]))
+        summary_rows.append(
+            {
+                "dim_red": grouped_row["dim_red"],
+                "n_components": grouped_row["n_components"],
+                "runs": grouped_row["runs"],
+                "subject_count": subject_count,
+                "cv_mean": f"{sum(grouped_row['cv_mean_values']) / len(grouped_row['cv_mean_values']):.4f}",
+                "val_accuracy": f"{sum(grouped_row['val_accuracy_values']) / len(grouped_row['val_accuracy_values']):.4f}",
+                "test_accuracy": f"{sum(grouped_row['test_accuracy_values']) / len(grouped_row['test_accuracy_values']):.4f}",
+            }
+        )
+
+    summary_rows.sort(key=lambda row: row["test_accuracy"], reverse=True)
+    return summary_rows
+
+
+def aggregate_by_subject(rows):
+    grouped = {}
+    for row in rows:
+        key = row["subject"]
+        grouped.setdefault(key, []).append(row)
+
+    subject_rows = []
+    for subject, subject_entries in grouped.items():
+        best_entry = max(subject_entries, key=lambda row: float(row["test_accuracy"]))
+        subject_rows.append(
+            {
+                "subject": subject,
+                "runs": best_entry["runs"],
+                "best_variant": f"{best_entry['dim_red']}:{best_entry['n_components']}",
+                "cv_mean": best_entry["cv_mean"],
+                "val_accuracy": best_entry["val_accuracy"],
+                "test_accuracy": best_entry["test_accuracy"],
+            }
+        )
+
+    subject_rows.sort(key=lambda row: row["subject"])
+    return subject_rows
+
+
+def print_summary(summary_rows):
+    print("\n--- SUMMARY BY VARIANT ---")
+    for row in summary_rows:
+        print(
+            f"{row['dim_red']}:{row['n_components']} "
+            f"subjects={row['subject_count']} "
+            f"cv_mean={row['cv_mean']} "
+            f"val={row['val_accuracy']} "
+            f"test={row['test_accuracy']}"
+        )
+
+
+def print_subject_summary(subject_rows):
+    print("\n--- BEST VARIANT BY SUBJECT ---")
+    for row in subject_rows:
+        print(
+            f"subject={row['subject']} "
+            f"best={row['best_variant']} "
+            f"cv_mean={row['cv_mean']} "
+            f"val={row['val_accuracy']} "
+            f"test={row['test_accuracy']}"
+        )
+
+
+def print_best_overall(summary_rows):
+    best_row = summary_rows[0]
+    print("\n--- BEST OVERALL ---")
+    print(
+        f"{best_row['dim_red']}:{best_row['n_components']} "
+        f"subjects={best_row['subject_count']} "
+        f"cv_mean={best_row['cv_mean']} "
+        f"val={best_row['val_accuracy']} "
+        f"test={best_row['test_accuracy']}"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark EEG BCI pipeline variants.")
     parser.add_argument(
-        "subjects",
+        "--subjects",
         type=str,
         nargs="+",
+        required=True,
         help="Subjects to benchmark (e.g. 1 2 3) or 'all'",
     )
     parser.add_argument(
-        "runs",
+        "--runs",
         type=str,
         nargs="+",
+        required=True,
         help="Runs to use (e.g. 4 8 12) or 'all'",
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
@@ -80,6 +188,7 @@ def main():
     parser.add_argument("--val-size", type=float, default=0.2, help="Validation split ratio")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--output", type=str, default=None, help="Output CSV path")
+    parser.add_argument("--quiet", action="store_true", help="Suppress inner training logs during benchmarking")
     args = parser.parse_args()
 
     subjects = parse_subjects(args.subjects)
@@ -94,18 +203,33 @@ def main():
                 f"Running subject={subject:03d} runs={runs} dim_red={dim_red} n_components={n_components}"
             )
             try:
-                result = train_and_evaluate(
-                    subject=subject,
-                    runs=runs,
-                    base_path=args.path,
-                    test_size=args.test_size,
-                    val_size=args.val_size,
-                    cvs=args.cvs,
-                    seed=args.seed,
-                    dim_red=dim_red,
-                    n_components=n_components,
-                    verbose=False,
-                )
+                if args.quiet:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        result = train_and_evaluate(
+                            subject=subject,
+                            runs=runs,
+                            base_path=args.path,
+                            test_size=args.test_size,
+                            val_size=args.val_size,
+                            cvs=args.cvs,
+                            seed=args.seed,
+                            dim_red=dim_red,
+                            n_components=n_components,
+                            verbose=False,
+                        )
+                else:
+                    result = train_and_evaluate(
+                        subject=subject,
+                        runs=runs,
+                        base_path=args.path,
+                        test_size=args.test_size,
+                        val_size=args.val_size,
+                        cvs=args.cvs,
+                        seed=args.seed,
+                        dim_red=dim_red,
+                        n_components=n_components,
+                        verbose=False,
+                    )
             except Exception as exc:
                 print(f"Skipped subject={subject:03d} dim_red={dim_red}: {exc}")
                 continue
@@ -132,6 +256,11 @@ def main():
 
     output_path = args.output or default_output_path(subjects, runs)
     write_rows_to_csv(output_path, rows)
+    summary_rows = aggregate_rows(rows)
+    subject_rows = aggregate_by_subject(rows)
+    print_summary(summary_rows)
+    print_subject_summary(subject_rows)
+    print_best_overall(summary_rows)
     print(f"\nSaved benchmark results to: {output_path}")
 
 

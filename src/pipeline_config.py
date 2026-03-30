@@ -8,10 +8,14 @@ from features import PowerBandExtractor
 
 
 def parse_runs(runs_arg):
-    if "all" in [r.lower() for r in runs_arg]:
+    normalized_runs = []
+    for value in runs_arg:
+        normalized_runs.extend(value.split())
+
+    if "all" in [r.lower() for r in normalized_runs]:
         return list(range(1, 15))
     try:
-        return [int(r) for r in runs_arg]
+        return [int(r) for r in normalized_runs]
     except ValueError as exc:
         raise ValueError("Invalid run values. Use run numbers or 'all'.") from exc
 
