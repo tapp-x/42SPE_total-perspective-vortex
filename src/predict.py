@@ -15,6 +15,63 @@ def default_model_path(subject, runs, dim_red, n_components):
     return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
 
 
+def run_playback_prediction(
+    subject,
+    runs,
+    base_path=None,
+    model_path=None,
+    dim_red="none",
+    n_components=10,
+    max_latency=2.0,
+    verbose=True,
+):
+    resolved_model_path = model_path or default_model_path(subject, runs, dim_red, n_components)
+    bundle = load(resolved_model_path)
+    pipeline = bundle["pipeline"]
+
+    X, y = load_subject_epochs(subject_id=subject, runs=runs, base_path=base_path, plot=False)
+    if X is None or y is None:
+        raise ValueError("No data loaded. Check subject/runs/path.")
+
+    predictions = []
+    latencies = []
+
+    if verbose:
+        print("\n--- PLAYBACK PREDICTION ---")
+        print(f"Model: {resolved_model_path}")
+        print(f"Epochs: {X.shape[0]}")
+
+    for idx in range(X.shape[0]):
+        epoch = X[idx : idx + 1]
+        truth = int(y[idx])
+
+        start = time.perf_counter()
+        pred = int(pipeline.predict(epoch)[0])
+        latency = time.perf_counter() - start
+
+        predictions.append(pred)
+        latencies.append(latency)
+
+        if verbose:
+            status = "True" if pred == truth else "False"
+            print(
+                f"Epoch {idx:02d}: prediction={pred} truth={truth} "
+                f"correct={status} latency={latency:.4f}s"
+            )
+
+    predictions = np.array(predictions)
+    accuracy = accuracy_score(y, predictions)
+    mean_latency = float(np.mean(latencies))
+    observed_max_latency = float(np.max(latencies))
+    latency_target_ok = observed_max_latency < max_latency
+
+    if verbose:
+        print("\n--- SUMMARY ---")
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Mean latency: {mean_latency:.4f}s")
+        print(f"Max latency:  {observed_max_latency:.4f}s")
+        print(f"Latency target ({max_latency:.2f}s): {'OK' if latency_target_ok else 'FAILED'}")
+
 def main():
     parser = argparse.ArgumentParser(description="Run EEG BCI predictions.")
     parser.add_argument("subject", type=int, help="Subject ID (e.g. 1 for S001)")
@@ -37,46 +94,16 @@ def main():
     args = parser.parse_args()
 
     runs = parse_runs(args.runs)
-    model_path = args.model or default_model_path(args.subject, runs, args.dim_red, args.n_components)
-    bundle = load(model_path)
-    pipeline = bundle["pipeline"]
-
-    X, y = load_subject_epochs(subject_id=args.subject, runs=runs, base_path=args.path, plot=False)
-    if X is None or y is None:
-        print("No data loaded. Check subject/runs/path.")
-        return
-
-    predictions = []
-    latencies = []
-
-    print("\n--- PLAYBACK PREDICTION ---")
-    print(f"Model: {model_path}")
-    print(f"Epochs: {X.shape[0]}")
-
-    for idx in range(X.shape[0]):
-        epoch = X[idx : idx + 1]
-        truth = int(y[idx])
-
-        start = time.perf_counter()
-        pred = int(pipeline.predict(epoch)[0])
-        latency = time.perf_counter() - start
-
-        predictions.append(pred)
-        latencies.append(latency)
-
-        status = "True" if pred == truth else "False"
-        print(f"Epoch {idx:02d}: prediction={pred} truth={truth} correct={status} latency={latency:.4f}s")
-
-    predictions = np.array(predictions)
-    accuracy = accuracy_score(y, predictions)
-    mean_latency = float(np.mean(latencies))
-    max_latency = float(np.max(latencies))
-
-    print("\n--- SUMMARY ---")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Mean latency: {mean_latency:.4f}s")
-    print(f"Max latency:  {max_latency:.4f}s")
-    print(f"Latency target ({args.max_latency:.2f}s): {'OK' if max_latency < args.max_latency else 'FAILED'}")
+    run_playback_prediction(
+        subject=args.subject,
+        runs=runs,
+        base_path=args.path,
+        model_path=args.model,
+        dim_red=args.dim_red,
+        n_components=args.n_components,
+        max_latency=args.max_latency,
+        verbose=True,
+    )
 
 
 if __name__ == "__main__":

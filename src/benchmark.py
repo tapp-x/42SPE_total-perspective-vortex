@@ -159,6 +159,75 @@ def print_best_overall(summary_rows):
     )
 
 
+def run_benchmark(
+    subjects,
+    runs,
+    base_path=None,
+    variants=None,
+    cvs=5,
+    test_size=0.2,
+    val_size=0.2,
+    seed=42,
+    quiet=False,
+):
+    resolved_variants = variants or parse_variant_specs(["none", "pca:5", "csp:4"])
+    rows = []
+
+    print("\n--- BENCHMARK ---")
+    for subject in subjects:
+        for dim_red, n_components in resolved_variants:
+            print(
+                f"Running subject={subject:03d} runs={runs} dim_red={dim_red} n_components={n_components}"
+            )
+            try:
+                if quiet:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        result = train_and_evaluate(
+                            subject=subject,
+                            runs=runs,
+                            base_path=base_path,
+                            test_size=test_size,
+                            val_size=val_size,
+                            cvs=cvs,
+                            seed=seed,
+                            dim_red=dim_red,
+                            n_components=n_components,
+                            verbose=False,
+                        )
+                else:
+                    result = train_and_evaluate(
+                        subject=subject,
+                        runs=runs,
+                        base_path=base_path,
+                        test_size=test_size,
+                        val_size=val_size,
+                        cvs=cvs,
+                        seed=seed,
+                        dim_red=dim_red,
+                        n_components=n_components,
+                        verbose=False,
+                    )
+            except Exception as exc:
+                print(f"Skipped subject={subject:03d} dim_red={dim_red}: {exc}")
+                continue
+
+            row = {
+                "subject": f"{subject:03d}",
+                "runs": "all" if runs == list(range(1, 15)) else "-".join(f"{run:02d}" for run in runs),
+                "dim_red": dim_red,
+                "n_components": n_components,
+                "n_epochs": result.n_epochs,
+                "classes": ",".join(str(value) for value in result.classes),
+                "cv_mean": f"{result.cv_scores.mean():.4f}",
+                "val_accuracy": f"{result.val_accuracy:.4f}",
+                "test_accuracy": f"{result.test_accuracy:.4f}",
+            }
+            rows.append(row)
+            print(f"cv_mean={row['cv_mean']} val={row['val_accuracy']} test={row['test_accuracy']}")
+
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark EEG BCI pipeline variants.")
     parser.add_argument(
@@ -195,60 +264,17 @@ def main():
     runs = parse_runs(args.runs)
     variants = parse_variant_specs(args.variants)
 
-    rows = []
-    print("\n--- BENCHMARK ---")
-    for subject in subjects:
-        for dim_red, n_components in variants:
-            print(
-                f"Running subject={subject:03d} runs={runs} dim_red={dim_red} n_components={n_components}"
-            )
-            try:
-                if args.quiet:
-                    with contextlib.redirect_stdout(io.StringIO()):
-                        result = train_and_evaluate(
-                            subject=subject,
-                            runs=runs,
-                            base_path=args.path,
-                            test_size=args.test_size,
-                            val_size=args.val_size,
-                            cvs=args.cvs,
-                            seed=args.seed,
-                            dim_red=dim_red,
-                            n_components=n_components,
-                            verbose=False,
-                        )
-                else:
-                    result = train_and_evaluate(
-                        subject=subject,
-                        runs=runs,
-                        base_path=args.path,
-                        test_size=args.test_size,
-                        val_size=args.val_size,
-                        cvs=args.cvs,
-                        seed=args.seed,
-                        dim_red=dim_red,
-                        n_components=n_components,
-                        verbose=False,
-                    )
-            except Exception as exc:
-                print(f"Skipped subject={subject:03d} dim_red={dim_red}: {exc}")
-                continue
-
-            row = {
-                "subject": f"{subject:03d}",
-                "runs": "all" if runs == list(range(1, 15)) else "-".join(f"{run:02d}" for run in runs),
-                "dim_red": dim_red,
-                "n_components": n_components,
-                "n_epochs": result.n_epochs,
-                "classes": ",".join(str(value) for value in result.classes),
-                "cv_mean": f"{result.cv_scores.mean():.4f}",
-                "val_accuracy": f"{result.val_accuracy:.4f}",
-                "test_accuracy": f"{result.test_accuracy:.4f}",
-            }
-            rows.append(row)
-            print(
-                f"cv_mean={row['cv_mean']} val={row['val_accuracy']} test={row['test_accuracy']}"
-            )
+    rows = run_benchmark(
+        subjects=subjects,
+        runs=runs,
+        base_path=args.path,
+        variants=variants,
+        cvs=args.cvs,
+        test_size=args.test_size,
+        val_size=args.val_size,
+        seed=args.seed,
+        quiet=args.quiet,
+    )
 
     if not rows:
         print("No benchmark results produced.")
