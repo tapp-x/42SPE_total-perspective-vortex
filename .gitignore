@@ -4,3 +4,4 @@ src/__pycache__/*
 venv_tpv/*
 .home/
 .mne/
+results/*

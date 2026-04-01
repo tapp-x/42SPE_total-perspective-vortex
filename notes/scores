@@ -1,0 +1,108 @@
+with csp:3:
+experiment 0: accuracy = 0.5556
+experiment 1: accuracy = 0.6222
+experiment 2: accuracy = 0.5889
+experiment 3: accuracy = 0.6333
+experiment 4: accuracy = 0.6222
+experiment 5: accuracy = 0.6444
+Mean accuracy of 6 experiments: 0.6111
+
+with csp:4:
+experiment 0: accuracy = 0.5667
+experiment 1: accuracy = 0.6333
+experiment 2: accuracy = 0.5667
+experiment 3: accuracy = 0.6333
+experiment 4: accuracy = 0.6667
+experiment 5: accuracy = 0.6333
+Mean accuracy of 6 experiments: 0.6167
+
+with csp:5:
+experiment 0: accuracy = 0.6333
+experiment 1: accuracy = 0.6556
+experiment 2: accuracy = 0.5889
+experiment 3: accuracy = 0.6556
+experiment 4: accuracy = 0.6111
+experiment 5: accuracy = 0.6333
+Mean accuracy of 6 experiments: 0.6296
+
+with csp:6:
+experiment 0: accuracy = 0.6000
+experiment 1: accuracy = 0.6778
+experiment 2: accuracy = 0.6000
+experiment 3: accuracy = 0.6444
+experiment 4: accuracy = 0.5778
+experiment 5: accuracy = 0.6444
+Mean accuracy of 6 experiments: 0.6241
+
+with csp:7:
+experiment 0: accuracy = 0.6333
+experiment 1: accuracy = 0.6778
+experiment 2: accuracy = 0.5778
+experiment 3: accuracy = 0.6556
+experiment 4: accuracy = 0.5778
+experiment 5: accuracy = 0.6222
+Mean accuracy of 6 experiments: 0.6241
+
+with csp:8:
+experiment 0: accuracy = 0.6000
+experiment 1: accuracy = 0.6556
+experiment 2: accuracy = 0.5889
+experiment 3: accuracy = 0.6556
+experiment 4: accuracy = 0.6111
+experiment 5: accuracy = 0.5778
+Mean accuracy of 6 experiments: 0.6148
+
+with csp:9:
+experiment 0: accuracy = 0.5889
+experiment 1: accuracy = 0.6889
+experiment 2: accuracy = 0.5889
+experiment 3: accuracy = 0.6444
+experiment 4: accuracy = 0.5778
+experiment 5: accuracy = 0.5778
+Mean accuracy of 6 experiments: 0.6111
+
+with csp:10:
+experiment 0: accuracy = 0.6222
+experiment 1: accuracy = 0.6778
+experiment 2: accuracy = 0.5778
+experiment 3: accuracy = 0.6000
+experiment 4: accuracy = 0.5889
+experiment 5: accuracy = 0.6000
+Mean accuracy of 6 experiments: 0.6111
+
+
+with pca:3:
+experiment 0: accuracy = 0.5889
+experiment 1: accuracy = 0.4333
+experiment 2: accuracy = 0.5667
+experiment 3: accuracy = 0.5667
+experiment 4: accuracy = 0.5556
+experiment 5: accuracy = 0.4333
+Mean accuracy of 6 experiments: 0.5241
+
+with pca:4:
+experiment 0: accuracy = 0.6444
+experiment 1: accuracy = 0.5000
+experiment 2: accuracy = 0.4889
+experiment 3: accuracy = 0.5778
+experiment 4: accuracy = 0.5111
+experiment 5: accuracy = 0.5111
+Mean accuracy of 6 experiments: 0.5389
+
+with pca:5:
+experiment 0: accuracy = 0.5333
+experiment 1: accuracy = 0.5778
+experiment 2: accuracy = 0.5333
+experiment 3: accuracy = 0.5667
+experiment 4: accuracy = 0.5111
+experiment 5: accuracy = 0.4444
+Mean accuracy of 6 experiments: 0.5278
+
+with pca:8:
+experiment 0: accuracy = 0.5222
+experiment 1: accuracy = 0.6222
+experiment 2: accuracy = 0.5889
+experiment 3: accuracy = 0.6556
+experiment 4: accuracy = 0.5444
+experiment 5: accuracy = 0.4667
+Mean accuracy of 6 experiments: 0.5667
