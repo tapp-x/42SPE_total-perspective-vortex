@@ -20,8 +20,8 @@ def run_playback_prediction(
     runs,
     base_path=None,
     model_path=None,
-    dim_red="none",
-    n_components=10,
+    dim_red="csp",
+    n_components=5,
     max_latency=2.0,
     verbose=True,
 ):
@@ -83,8 +83,8 @@ def main():
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
     parser.add_argument("--model", type=str, default=None, help="Path to trained model (.joblib)")
-    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
-    parser.add_argument("--n-components", type=int, default=10, help="Number of PCA or CSP components")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="csp", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=5, help="Number of PCA or CSP components")
     parser.add_argument(
         "--max-latency",
         type=float,

@@ -170,7 +170,7 @@ def run_benchmark(
     seed=42,
     quiet=False,
 ):
-    resolved_variants = variants or parse_variant_specs(["none", "pca:5", "csp:4"])
+    resolved_variants = variants or parse_variant_specs(["csp:5"])
     rows = []
 
     print("\n--- BENCHMARK ---")
@@ -249,8 +249,8 @@ def main():
         "--variants",
         type=str,
         nargs="+",
-        default=["none", "pca:5", "csp:4"],
-        help="Variants to benchmark, e.g. none pca:10 csp:4",
+        default=["csp:5"],
+        help="Variants to benchmark, e.g. csp:5 none pca:8",
     )
     parser.add_argument("--cvs", type=int, default=5, help="Cross-validation folds")
     parser.add_argument("--test-size", type=float, default=0.2, help="Test split ratio")

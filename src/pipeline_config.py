@@ -28,7 +28,7 @@ def pipeline_suffix(dim_red, n_components):
     return "base"
 
 
-def build_pipeline(dim_red="none", n_components=10):
+def build_pipeline(dim_red="csp", n_components=5):
     if dim_red == "csp":
         steps = [
             ("dimensionality_reduction", CSPTransformer(n_components=n_components)),

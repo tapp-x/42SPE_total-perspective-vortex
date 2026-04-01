@@ -45,8 +45,8 @@ def train_and_evaluate(
     val_size=0.2,
     cvs=5,
     seed=42,
-    dim_red="none",
-    n_components=10,
+    dim_red="csp",
+    n_components=5,
     verbose=True,
 ):
     X, y = load_subject_epochs(subject_id=subject, runs=runs, base_path=base_path, plot=False)
@@ -160,8 +160,8 @@ def main():
     )
     parser.add_argument("--cvs", type=int, default=5, help="Cross-validation folds")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
-    parser.add_argument("--n-components", type=int, default=10, help="Number of PCA or CSP components")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="csp", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=5, help="Number of PCA or CSP components")
     parser.add_argument(
         "--model-out",
         type=str,

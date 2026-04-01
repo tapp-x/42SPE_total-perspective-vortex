@@ -11,8 +11,8 @@ def main():
     parser.add_argument("runs", type=str, nargs='+', help="List of runs to process (e.g., 4 8 12) or 'all'")
     parser.add_argument("--path", type=str, default=None, help="Base path to the dataset")
     parser.add_argument("--plot", action="store_true", help="Visualize raw and filtered data for the first run")
-    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="none", help="Dimensionality reduction method")
-    parser.add_argument("--n-components", type=int, default=10, help="Number of components for PCA or CSP")
+    parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="csp", help="Dimensionality reduction method")
+    parser.add_argument("--n-components", type=int, default=5, help="Number of components for PCA or CSP")
     
     args = parser.parse_args()
     
