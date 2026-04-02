@@ -7,7 +7,7 @@ import numpy as np
 from joblib import load
 from sklearn.metrics import accuracy_score
 
-from pipeline_config import parse_runs, pipeline_suffix
+from pipeline_config import default_model_path, parse_runs
 from preprocessing import load_subject_epochs
 
 
@@ -88,12 +88,13 @@ def run_playback_prediction(
     latency_target_ok = observed_max_latency < max_latency
 
     if verbose:
-        print("\n--- SUMMARY ---")
+        latency_status = "OK" if latency_target_ok else "FAILED"
+        print("\n--- Summary ---")
         print(f"Accuracy: {accuracy:.4f}")
         print(f"Mean latency: {mean_latency:.4f}s")
         print(f"Max latency:  {observed_max_latency:.4f}s")
         print(f"Deadline misses: {deadline_misses}/{len(latencies)}")
-        print(f"Latency target ({max_latency:.2f}s): {'OK' if latency_target_ok else 'FAILED'}")
+        print(f"Latency target ({max_latency:.2f}s): {latency_status}")
 
 def main():
     parser = argparse.ArgumentParser(description="Run EEG BCI predictions.")

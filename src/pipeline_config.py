@@ -28,6 +28,12 @@ def pipeline_suffix(dim_red, n_components):
     return "base"
 
 
+def default_model_path(subject, runs, dim_red, n_components):
+    runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
+    variant_slug = pipeline_suffix(dim_red, n_components)
+    return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
+
+
 def build_pipeline(dim_red="csp", n_components=5):
     if dim_red == "csp":
         steps = [

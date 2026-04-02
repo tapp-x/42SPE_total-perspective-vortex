@@ -8,7 +8,7 @@ from sklearn.base import clone
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
-from pipeline_config import build_pipeline, parse_runs, pipeline_suffix
+from pipeline_config import build_pipeline, default_model_path, parse_runs
 from preprocessing import load_subject_epochs
 
 
