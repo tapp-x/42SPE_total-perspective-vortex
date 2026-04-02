@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from joblib import dump
+from sklearn.base import clone
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
@@ -100,9 +101,12 @@ def train_and_evaluate(
 
     pipeline.fit(X_train, y_train)
     y_val_pred = pipeline.predict(X_val)
-    y_test_pred = pipeline.predict(X_test)
 
     val_acc = accuracy_score(y_val, y_val_pred)
+
+    final_pipeline = clone(pipeline)
+    final_pipeline.fit(X_train_val, y_train_val)
+    y_test_pred = final_pipeline.predict(X_test)
     test_acc = accuracy_score(y_test, y_test_pred)
 
     if verbose:
@@ -111,7 +115,7 @@ def train_and_evaluate(
         print(f"Test accuracy:       {test_acc:.4f}")
 
     return TrainingResult(
-        pipeline=pipeline,
+        pipeline=final_pipeline,
         subject=subject,
         runs=runs,
         dim_red=dim_red,
@@ -125,7 +129,9 @@ def train_and_evaluate(
 
 
 def save_training_result(result, model_out):
-    os.makedirs(os.path.dirname(model_out), exist_ok=True)
+    model_dir = os.path.dirname(model_out)
+    if model_dir:
+        os.makedirs(model_dir, exist_ok=True)
     dump(
         {
             "pipeline": result.pipeline,
