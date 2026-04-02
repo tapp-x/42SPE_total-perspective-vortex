@@ -18,12 +18,6 @@ class PlaybackChunk:
     truth: int
 
 
-def default_model_path(subject, runs, dim_red, n_components):
-    runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
-    variant_slug = pipeline_suffix(dim_red, n_components)
-    return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
-
-
 def iter_playback_chunks(X, y):
     for idx in range(X.shape[0]):
         yield PlaybackChunk(index=idx, epoch=X[idx : idx + 1], truth=int(y[idx]))
@@ -57,7 +51,7 @@ def run_playback_prediction(
     deadline_misses = 0
 
     if verbose:
-        print("\n--- PLAYBACK PREDICTION ---")
+        print("\n--- Playback prediction ---")
         print(f"Model: {resolved_model_path}")
         print(f"Epochs: {X.shape[0]}")
         print(f"Max latency per chunk: {max_latency:.2f}s")
@@ -103,7 +97,7 @@ def main():
         "runs",
         type=str,
         nargs="+",
-        help="Runs to use for prediction (e.g. 4 8 12) or 'all'",
+        help="Runs to use for prediction (e.g. 4 8 12) or all",
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
     parser.add_argument("--model", type=str, default=None, help="Path to trained model (.joblib)")

@@ -60,7 +60,7 @@ def train_and_evaluate(
         raise ValueError(f"Need at least 2 classes to train, found: {classes.tolist()}")
 
     if verbose:
-        print("\n--- DATA SUMMARY ---")
+        print("\n--- Data summary ---")
         print(f"X shape (epochs, channels, time): {X.shape}")
         print(f"y shape: {y.shape}")
         print(f"Classes: {classes.tolist()}")
@@ -72,7 +72,7 @@ def train_and_evaluate(
     cv_scores = cross_val_score(pipeline, X, y, cv=skf, scoring="accuracy")
 
     if verbose:
-        print("\n--- CROSS VALIDATION ---")
+        print("\n--- Cross validation ---")
         print(f"Scores: {np.round(cv_scores, 4)}")
         print(f"Mean accuracy: {cv_scores.mean():.4f}")
 
@@ -94,7 +94,7 @@ def train_and_evaluate(
     )
 
     if verbose:
-        print("\n--- SPLIT ---")
+        print("\n--- Split ---")
         print(f"Train: {X_train.shape[0]} epochs")
         print(f"Val:   {X_val.shape[0]} epochs")
         print(f"Test:  {X_test.shape[0]} epochs")
@@ -110,7 +110,7 @@ def train_and_evaluate(
     test_acc = accuracy_score(y_test, y_test_pred)
 
     if verbose:
-        print("\n--- HOLDOUT METRICS ---")
+        print("\n--- Holdout metrics ---")
         print(f"Validation accuracy: {val_acc:.4f}")
         print(f"Test accuracy:       {test_acc:.4f}")
 
@@ -154,7 +154,7 @@ def main():
         "runs",
         type=str,
         nargs="+",
-        help="Runs to use (e.g. 4 8 12) or 'all'",
+        help="Runs to use (e.g. 4 8 12) or all",
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
     parser.add_argument("--test-size", type=float, default=0.2, help="Test split ratio")

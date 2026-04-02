@@ -17,7 +17,7 @@ def parse_runs(runs_arg):
     try:
         return [int(r) for r in normalized_runs]
     except ValueError as exc:
-        raise ValueError("Invalid run values. Use run numbers or 'all'.") from exc
+        raise ValueError("Invalid run values. Use run numbers or all.") from exc
 
 
 def pipeline_suffix(dim_red, n_components):

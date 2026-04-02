@@ -52,14 +52,14 @@ def main():
         type=str,
         nargs="+",
         required=True,
-        help="Subjects to import (e.g. 1 2 3) or 'all'",
+        help="Subjects to import (e.g. 1 2 3) or all",
     )
     parser.add_argument(
         "--runs",
         type=str,
         nargs="+",
         required=True,
-        help="Runs to import (e.g. 4 8 12) or 'all'",
+        help="Runs to import (e.g. 4 8 12) or all",
     )
     parser.add_argument(
         "--path",

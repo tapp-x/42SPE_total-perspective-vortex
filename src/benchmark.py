@@ -83,15 +83,18 @@ def aggregate_rows(rows):
     summary_rows = []
     for grouped_row in grouped.values():
         subject_count = len(set(grouped_row["subjects"]))
+        cv_mean_values = grouped_row["cv_mean_values"]
+        val_accuracy_values = grouped_row["val_accuracy_values"]
+        test_accuracy_values = grouped_row["test_accuracy_values"]
         summary_rows.append(
             {
                 "dim_red": grouped_row["dim_red"],
                 "n_components": grouped_row["n_components"],
                 "runs": grouped_row["runs"],
                 "subject_count": subject_count,
-                "cv_mean": f"{sum(grouped_row['cv_mean_values']) / len(grouped_row['cv_mean_values']):.4f}",
-                "val_accuracy": f"{sum(grouped_row['val_accuracy_values']) / len(grouped_row['val_accuracy_values']):.4f}",
-                "test_accuracy": f"{sum(grouped_row['test_accuracy_values']) / len(grouped_row['test_accuracy_values']):.4f}",
+                "cv_mean": f"{sum(cv_mean_values) / len(cv_mean_values):.4f}",
+                "val_accuracy": f"{sum(val_accuracy_values) / len(val_accuracy_values):.4f}",
+                "test_accuracy": f"{sum(test_accuracy_values) / len(test_accuracy_values):.4f}",
             }
         )
 
@@ -108,11 +111,13 @@ def aggregate_by_subject(rows):
     subject_rows = []
     for subject, subject_entries in grouped.items():
         best_entry = max(subject_entries, key=lambda row: float(row["test_accuracy"]))
+        best_dim_red = best_entry["dim_red"]
+        best_n_components = best_entry["n_components"]
         subject_rows.append(
             {
                 "subject": subject,
                 "runs": best_entry["runs"],
-                "best_variant": f"{best_entry['dim_red']}:{best_entry['n_components']}",
+                "best_variant": f"{best_dim_red}:{best_n_components}",
                 "cv_mean": best_entry["cv_mean"],
                 "val_accuracy": best_entry["val_accuracy"],
                 "test_accuracy": best_entry["test_accuracy"],
@@ -126,36 +131,53 @@ def aggregate_by_subject(rows):
 def print_summary(summary_rows):
     print("\n--- SUMMARY BY VARIANT ---")
     for row in summary_rows:
+        dim_red = row["dim_red"]
+        n_components = row["n_components"]
+        subject_count = row["subject_count"]
+        cv_mean = row["cv_mean"]
+        val_accuracy = row["val_accuracy"]
+        test_accuracy = row["test_accuracy"]
         print(
-            f"{row['dim_red']}:{row['n_components']} "
-            f"subjects={row['subject_count']} "
-            f"cv_mean={row['cv_mean']} "
-            f"val={row['val_accuracy']} "
-            f"test={row['test_accuracy']}"
+            f"{dim_red}:{n_components} "
+            f"subjects={subject_count} "
+            f"cv_mean={cv_mean} "
+            f"val={val_accuracy} "
+            f"test={test_accuracy}"
         )
 
 
 def print_subject_summary(subject_rows):
     print("\n--- BEST VARIANT BY SUBJECT ---")
     for row in subject_rows:
+        subject = row["subject"]
+        best_variant = row["best_variant"]
+        cv_mean = row["cv_mean"]
+        val_accuracy = row["val_accuracy"]
+        test_accuracy = row["test_accuracy"]
         print(
-            f"subject={row['subject']} "
-            f"best={row['best_variant']} "
-            f"cv_mean={row['cv_mean']} "
-            f"val={row['val_accuracy']} "
-            f"test={row['test_accuracy']}"
+            f"subject={subject} "
+            f"best={best_variant} "
+            f"cv_mean={cv_mean} "
+            f"val={val_accuracy} "
+            f"test={test_accuracy}"
         )
 
 
 def print_best_overall(summary_rows):
     best_row = summary_rows[0]
+    dim_red = best_row["dim_red"]
+    n_components = best_row["n_components"]
+    subject_count = best_row["subject_count"]
+    cv_mean = best_row["cv_mean"]
+    val_accuracy = best_row["val_accuracy"]
+    test_accuracy = best_row["test_accuracy"]
     print("\n--- BEST OVERALL ---")
     print(
-        f"{best_row['dim_red']}:{best_row['n_components']} "
-        f"subjects={best_row['subject_count']} "
-        f"cv_mean={best_row['cv_mean']} "
-        f"val={best_row['val_accuracy']} "
-        f"test={best_row['test_accuracy']}"
+        f"{dim_red}:{n_components} "
+        f"subjects={subject_count} "
+        f"cv_mean={cv_mean} "
+        f"val={val_accuracy} "
+        f"test={test_accuracy}"
     )
 
 
@@ -223,7 +245,10 @@ def run_benchmark(
                 "test_accuracy": f"{result.test_accuracy:.4f}",
             }
             rows.append(row)
-            print(f"cv_mean={row['cv_mean']} val={row['val_accuracy']} test={row['test_accuracy']}")
+            cv_mean = row["cv_mean"]
+            val_accuracy = row["val_accuracy"]
+            test_accuracy = row["test_accuracy"]
+            print(f"cv_mean={cv_mean} val={val_accuracy} test={test_accuracy}")
 
     return rows
 
@@ -235,14 +260,14 @@ def main():
         type=str,
         nargs="+",
         required=True,
-        help="Subjects to benchmark (e.g. 1 2 3) or 'all'",
+        help="Subjects to benchmark (e.g. 1 2 3) or all",
     )
     parser.add_argument(
         "--runs",
         type=str,
         nargs="+",
         required=True,
-        help="Runs to use (e.g. 4 8 12) or 'all'",
+        help="Runs to use (e.g. 4 8 12) or all",
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
     parser.add_argument(
