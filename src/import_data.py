@@ -2,19 +2,9 @@ import argparse
 from pathlib import Path
 from urllib.request import urlopen
 
-from pipeline_config import parse_runs
+from pipeline_config import parse_runs, parse_subjects
 
 EEGBCI_BASE_URL = "https://physionet.org/files/eegmmidb/1.0.0"
-
-
-def parse_subjects(subject_args):
-    normalized_subjects = []
-    for value in subject_args:
-        normalized_subjects.extend(value.split())
-
-    if "all" in [value.lower() for value in normalized_subjects]:
-        return list(range(1, 110))
-    return [int(value) for value in normalized_subjects]
 
 
 def download_file(url, destination):

@@ -20,6 +20,19 @@ def parse_runs(runs_arg):
         raise ValueError("Invalid run values. Use run numbers or all.") from exc
 
 
+def parse_subjects(subject_args, max_subject=109):
+    normalized_subjects = []
+    for value in subject_args:
+        normalized_subjects.extend(value.split())
+
+    if "all" in [value.lower() for value in normalized_subjects]:
+        return list(range(1, max_subject + 1))
+    try:
+        return [int(value) for value in normalized_subjects]
+    except ValueError as exc:
+        raise ValueError("Invalid subject values. Use subject numbers or all.") from exc
+
+
 def pipeline_suffix(dim_red, n_components):
     if dim_red == "pca":
         return f"pca{n_components}"
