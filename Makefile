@@ -22,7 +22,7 @@ RUNTIME_HOME = $(RUNTIME_ROOT)/home
 MNE_HOME = $(RUNTIME_ROOT)/mne
 RUN_ENV = HOME="$(RUNTIME_HOME)" MNE_HOME="$(MNE_HOME)" "$(VENV_PY)"
 
-MAIN_CMD = $(RUN_ENV) src/main.py
+MAIN_CMD = $(RUN_ENV) src/inspect_preprocessing.py
 TRAIN_CMD = $(RUN_ENV) src/train.py
 PREDICT_CMD = $(RUN_ENV) src/predict.py
 BENCH_CMD = $(RUN_ENV) src/benchmark.py
@@ -35,7 +35,7 @@ EVAL_KW = --cvs "$(CVS)" --test-size "$(TEST_SIZE)" --val-size "$(VAL_SIZE)" --s
 
 .DEFAULT_GOAL := help
 
-.PHONY: help venv install main train predict benchmark mybci import-data check-env clean clean-local-runtime
+.PHONY: help venv install inspect train predict benchmark mybci import-data check-env clean clean-local-runtime
 
 runtime:
 	mkdir -p "$(RUNTIME_HOME)"
@@ -45,8 +45,7 @@ help:
 	@echo "Commands:"
 	@echo "  make train SUBJECT=1 RUNS='4'"
 	@echo "  make predict SUBJECT=1 RUNS='4'"
-	@echo "  make main SUBJECT=1 RUNS='4'"
-	@echo "  make plot SUBJECT=1 RUNS='4'"
+	@echo "  make inspect SUBJECT=1 RUNS='4'"
 	@echo "  make train SUBJECT=1 RUNS='4' DIM_RED=csp N_COMPONENTS=5"
 	@echo "  make benchmark SUBJECT=1 RUNS='4'"
 	@echo "  make mybci"
@@ -61,10 +60,7 @@ install:
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 
-main: runtime
-	$(MAIN_CMD) "$(SUBJECT)" $(RUNS) $(BCI_ARGS)
-
-plot: runtime
+inspect: runtime
 	$(MAIN_CMD) "$(SUBJECT)" $(RUNS) --plot $(BCI_ARGS)
 
 train: runtime
