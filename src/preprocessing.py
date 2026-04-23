@@ -2,9 +2,38 @@ import os
 import numpy as np
 import mne
 import warnings
+import matplotlib.pyplot as plt
 
 # We ignore warnings to keep the output clean, especially from MNE which can be verbose
 warnings.filterwarnings("ignore")
+
+
+def plot_recording(raw, filepath, title, block):
+    raw.plot(
+        duration=10,
+        n_channels=5,
+        title=f"{title} - {os.path.basename(filepath)}",
+        show=False,
+        block=block,
+    )
+
+
+def plot_psd_compat(raw, filepath, title):
+    """
+    Plot PSD in a way that works across MNE versions.
+    """
+    try:
+        spectrum = raw.compute_psd(fmax=50)
+        fig = spectrum.plot(show=False)
+    except AttributeError:
+        fig = raw.plot_psd(fmax=50, show=False)
+
+    window_title = f"{title} - {os.path.basename(filepath)}"
+    if hasattr(fig, "suptitle"):
+        fig.suptitle(window_title)
+    if hasattr(fig, "canvas") and hasattr(fig.canvas, "manager") and hasattr(fig.canvas.manager, "set_window_title"):
+        fig.canvas.manager.set_window_title(window_title)
+    return fig
 
 
 def load_epochs_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
@@ -15,12 +44,16 @@ def load_epochs_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
     raw = mne.io.read_raw_edf(filepath, preload=True, verbose=False)
 
     if plot:
-        raw.plot(duration=10, n_channels=5, title=f"Raw Data - {os.path.basename(filepath)}", block=False)
+        raw_before_filter = raw.copy()
+        plot_recording(raw_before_filter, filepath, "Raw Data", False)
+        plot_psd_compat(raw_before_filter, filepath, "PSD Before Filtering")
 
     raw.filter(l_freq=8.0, h_freq=30.0, fir_design="firwin", verbose=False)
 
     if plot:
-        raw.plot(duration=10, n_channels=5, title=f"Filtered Data (8-30Hz) - {os.path.basename(filepath)}", block=True)
+        plot_recording(raw, filepath, "Filtered Data (8-30Hz)", False)
+        plot_psd_compat(raw, filepath, "PSD After Filtering (8-30Hz)")
+        plt.show(block=True)
 
     events, event_dict = mne.events_from_annotations(raw, verbose=False)
 
