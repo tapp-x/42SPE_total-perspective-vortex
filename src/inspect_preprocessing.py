@@ -9,6 +9,8 @@ from preprocessing import load_subject_epochs
 
 
 def main():
+    """CLI entry point used to visualize preprocessing and check feature shapes."""
+
     parser = argparse.ArgumentParser(description="Inspect EEG preprocessing and pipeline shapes.")
     parser.add_argument("subject", type=int, help="Subject ID (e.g., 1 for S001)")
     parser.add_argument("runs", type=str, nargs="+", help="List of runs to process (e.g., 4 8 12) or all")

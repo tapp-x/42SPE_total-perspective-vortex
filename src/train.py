@@ -14,6 +14,8 @@ from preprocessing import load_subject_epochs
 
 @dataclass
 class TrainingResult:
+    """Container for the metrics and fitted pipeline produced by training."""
+
     pipeline: object
     subject: int
     runs: list
@@ -27,15 +29,11 @@ class TrainingResult:
 
 
 def get_valid_stratified_cv_folds(y, requested_cv):
+    """Limit the number of CV folds to the smallest class size."""
+
     _, counts = np.unique(y, return_counts=True)
     min_class_count = int(np.min(counts))
     return max(2, min(requested_cv, min_class_count))
-
-
-def default_model_path(subject, runs, dim_red, n_components):
-    runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{r:02d}" for r in runs)
-    variant_slug = pipeline_suffix(dim_red, n_components)
-    return f"models/s{subject:03d}_runs_{runs_slug}_{variant_slug}.joblib"
 
 
 def train_and_evaluate(
@@ -50,6 +48,8 @@ def train_and_evaluate(
     n_components=5,
     verbose=True,
 ):
+    """Load a subject, score the pipeline, then fit and evaluate the final model."""
+
     X, y = load_subject_epochs(subject_id=subject, runs=runs, base_path=base_path, plot=False)
 
     if X is None or y is None:
@@ -129,6 +129,8 @@ def train_and_evaluate(
 
 
 def save_training_result(result, model_out):
+    """Persist the fitted pipeline and its evaluation metrics to disk."""
+
     model_dir = os.path.dirname(model_out)
     if model_dir:
         os.makedirs(model_dir, exist_ok=True)
@@ -148,6 +150,8 @@ def save_training_result(result, model_out):
 
 
 def main():
+    """CLI entry point for training a model and saving it to disk."""
+
     parser = argparse.ArgumentParser(description="Train EEG BCI pipeline.")
     parser.add_argument("subject", type=int, help="Subject ID (e.g. 1 for S001)")
     parser.add_argument(

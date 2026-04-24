@@ -13,12 +13,16 @@ from preprocessing import load_subject_epochs
 
 @dataclass
 class PlaybackChunk:
+    """One epoch from the playback stream, with its index and ground truth."""
+
     index: int
     epoch: np.ndarray
     truth: int
 
 
 def iter_playback_chunks(X, y):
+    """Yield epochs one by one so prediction behaves like a live stream."""
+
     for idx in range(X.shape[0]):
         yield PlaybackChunk(index=idx, epoch=X[idx : idx + 1], truth=int(y[idx]))
 
@@ -33,6 +37,8 @@ def run_playback_prediction(
     max_latency=2.0,
     verbose=True,
 ):
+    """Load a saved model and replay epochs one by one while tracking latency."""
+
     resolved_model_path = model_path or default_model_path(subject, runs, dim_red, n_components)
     if not os.path.exists(resolved_model_path):
         raise FileNotFoundError(
@@ -90,7 +96,12 @@ def run_playback_prediction(
         print(f"Deadline misses: {deadline_misses}/{len(latencies)}")
         print(f"Latency target ({max_latency:.2f}s): {latency_status}")
 
+    return accuracy, mean_latency, observed_max_latency, deadline_misses
+
+
 def main():
+    """CLI entry point for stream-like prediction on a trained model."""
+
     parser = argparse.ArgumentParser(description="Run EEG BCI predictions.")
     parser.add_argument("subject", type=int, help="Subject ID (e.g. 1 for S001)")
     parser.add_argument(

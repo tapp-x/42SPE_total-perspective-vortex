@@ -9,6 +9,8 @@ from train import train_and_evaluate
 
 
 def parse_variant_specs(specs):
+    """Parse variant strings like ``csp:5`` or ``pca:8`` into tuples."""
+
     variants = []
     for spec in specs:
         if ":" in spec:
@@ -22,12 +24,16 @@ def parse_variant_specs(specs):
 
 
 def default_output_path(subjects, runs):
+    """Build a readable CSV filename for the benchmark results."""
+
     subject_slug = "all" if len(subjects) > 3 else "-".join(f"{subject:03d}" for subject in subjects)
     runs_slug = "all" if runs == list(range(1, 15)) else "-".join(f"{run:02d}" for run in runs)
     return f"results/benchmark_subjects_{subject_slug}_runs_{runs_slug}.csv"
 
 
 def write_rows_to_csv(output_path, rows):
+    """Persist benchmark rows to disk in a flat, machine-readable format."""
+
     output_dir = os.path.dirname(output_path)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
@@ -62,6 +68,8 @@ def run_benchmark(
     seed=42,
     quiet=False,
 ):
+    """Run the training routine for each subject/variant pair and collect CSV rows."""
+
     rows = []
     resolved_variants = variants or parse_variant_specs(["csp:5"])
 
@@ -119,6 +127,8 @@ def run_benchmark(
 
 
 def main():
+    """CLI entry point for generating benchmark CSV files."""
+
     parser = argparse.ArgumentParser(description="Benchmark EEG BCI pipeline variants.")
     parser.add_argument("--subjects", type=str, nargs="+", required=True, help="Subjects to benchmark (e.g. 1 2 3 or all)")
     parser.add_argument("--runs", type=str, nargs="+", required=True, help="Runs to use (e.g. 4 8 12 or all)")
