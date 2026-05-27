@@ -6,6 +6,10 @@ from sklearn.svm import SVC
 from csp import CSPTransformer
 from features import PowerBandExtractor
 
+DEFAULT_TEST_SIZE = 0.2
+DEFAULT_VAL_SIZE = 0.2
+DEFAULT_RANDOM_SEED = 42
+
 
 def parse_runs(runs_arg):
     normalized_runs = []

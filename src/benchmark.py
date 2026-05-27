@@ -1,10 +1,13 @@
 import argparse
 import csv
 import os
-from contextlib import redirect_stdout
-from io import StringIO
 
-from pipeline_config import parse_runs, parse_subjects
+from pipeline_config import (
+    DEFAULT_RANDOM_SEED,
+    DEFAULT_TEST_SIZE,
+    parse_runs,
+    parse_subjects,
+)
 from train import train_and_evaluate
 
 
@@ -63,48 +66,29 @@ def run_benchmark(
     base_path=None,
     variants=None,
     cvs=5,
-    test_size=0.2,
-    val_size=0.2,
-    seed=42,
-    quiet=False,
+    test_size=DEFAULT_TEST_SIZE,
+    seed=DEFAULT_RANDOM_SEED,
 ):
     """Run the training routine for each subject/variant pair and collect CSV rows."""
 
     rows = []
-    resolved_variants = variants or parse_variant_specs(["csp:5"])
+    resolved_variants = variants or parse_variant_specs(["csp:5", "pca:5", "none"])
 
     print("\n--- Benchmark ---")
     for subject in subjects:
         for dim_red, n_components in resolved_variants:
             print(f"Running subject={subject:03d} dim_red={dim_red} n_components={n_components}")
             try:
-                if quiet:
-                    with redirect_stdout(StringIO()):
-                        result = train_and_evaluate(
-                            subject=subject,
-                            runs=runs,
-                            base_path=base_path,
-                            test_size=test_size,
-                            val_size=val_size,
-                            cvs=cvs,
-                            seed=seed,
-                            dim_red=dim_red,
-                            n_components=n_components,
-                            verbose=False,
-                        )
-                else:
-                    result = train_and_evaluate(
-                        subject=subject,
-                        runs=runs,
-                        base_path=base_path,
-                        test_size=test_size,
-                        val_size=val_size,
-                        cvs=cvs,
-                        seed=seed,
-                        dim_red=dim_red,
-                        n_components=n_components,
-                        verbose=False,
-                    )
+                result = train_and_evaluate(
+                    subject=subject,
+                    runs=runs,
+                    base_path=base_path,
+                    test_size=test_size,
+                    cvs=cvs,
+                    seed=seed,
+                    dim_red=dim_red,
+                    n_components=n_components,
+                )
             except Exception as exc:
                 print(f"Skipped subject={subject:03d} dim_red={dim_red}: {exc}")
                 continue
@@ -133,13 +117,9 @@ def main():
     parser.add_argument("--subjects", type=str, nargs="+", required=True, help="Subjects to benchmark (e.g. 1 2 3 or all)")
     parser.add_argument("--runs", type=str, nargs="+", required=True, help="Runs to use (e.g. 4 8 12 or all)")
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
-    parser.add_argument("--variants", type=str, nargs="+", default=["csp:5"], help="Variants to benchmark, e.g. csp:5 none pca:8")
+    parser.add_argument("--variants", type=str, nargs="+", default=["csp:5", "pca:5", "none"], help="Variants to benchmark, e.g. csp:5 none pca:8")
     parser.add_argument("--cvs", type=int, default=5, help="Cross-validation folds")
-    parser.add_argument("--test-size", type=float, default=0.2, help="Test split ratio")
-    parser.add_argument("--val-size", type=float, default=0.2, help="Validation split ratio")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--output", type=str, default=None, help="Output CSV path")
-    parser.add_argument("--quiet", action="store_true", help="Suppress inner training logs during benchmarking")
     args = parser.parse_args()
 
     subjects = parse_subjects(args.subjects)
@@ -152,10 +132,6 @@ def main():
         base_path=args.path,
         variants=variants,
         cvs=args.cvs,
-        test_size=args.test_size,
-        val_size=args.val_size,
-        seed=args.seed,
-        quiet=args.quiet,
     )
 
     if not rows:

@@ -20,9 +20,10 @@ The mandatory part of the project is implemented around a full sklearn pipeline:
 - `src/pipeline_config.py`: build the sklearn pipeline and parse runs
 - `src/train.py`: training, cross-validation, validation, test, model saving
 - `src/predict.py`: model loading and playback-style prediction
-- `src/inspect_preprocessing.py`: preprocessing and pipeline inspection helper
+- `src/preprocessing_preview.py`: preprocessing visualization and shape check helper
 - `src/mybci.py`: unified entry point
 - `src/import_data.py`: download PhysioNet EEGBCI files
+- `src/benchmark.py`: compare CSP, PCA, and baseline variants by default
 
 ## Installation
 
@@ -72,5 +73,6 @@ make benchmark SUBJECT=1 RUNS='4'
 
 - `csp` is the main mandatory path.
 - `pca` and `none` are extra variants that remain available, but the mandatory work is centered on CSP.
+- The train/validation/test split ratios and random seed are fixed in code to keep the evaluation protocol simple and reproducible.
 - Trained models are saved in `models/`.
 - Benchmark outputs are saved in `results/`.

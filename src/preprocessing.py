@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore")
 
 
 def plot_recording(raw, filepath, title, block):
+    """Plot the raw EEG recording"""
     raw.plot(
         duration=10,
         n_channels=5,
@@ -18,21 +19,12 @@ def plot_recording(raw, filepath, title, block):
     )
 
 
-def plot_psd_compat(raw, filepath, title):
-    """
-    Plot PSD in a way that works across MNE versions.
-    """
-    try:
-        spectrum = raw.compute_psd(fmax=50)
-        fig = spectrum.plot(show=False)
-    except AttributeError:
-        fig = raw.plot_psd(fmax=50, show=False)
+def plot_psd(raw, filepath, title):
+    """Plot the power spectral density"""
+    spectrum = raw.compute_psd(fmax=50)
+    fig = spectrum.plot(show=False)
 
-    window_title = f"{title} - {os.path.basename(filepath)}"
-    if hasattr(fig, "suptitle"):
-        fig.suptitle(window_title)
-    if hasattr(fig, "canvas") and hasattr(fig.canvas, "manager") and hasattr(fig.canvas.manager, "set_window_title"):
-        fig.canvas.manager.set_window_title(window_title)
+    fig.suptitle(f"{title} - {os.path.basename(filepath)}")
     return fig
 
 
@@ -46,13 +38,13 @@ def load_epochs_from_edf(filepath, tmin=-0.5, tmax=4.0, plot=False):
     if plot:
         raw_before_filter = raw.copy()
         plot_recording(raw_before_filter, filepath, "Raw Data", False)
-        plot_psd_compat(raw_before_filter, filepath, "PSD Before Filtering")
+        plot_psd(raw_before_filter, filepath, "PSD Before Filtering")
 
     raw.filter(l_freq=8.0, h_freq=30.0, fir_design="firwin", verbose=False)
 
     if plot:
         plot_recording(raw, filepath, "Filtered Data (8-30Hz)", False)
-        plot_psd_compat(raw, filepath, "PSD After Filtering (8-30Hz)")
+        plot_psd(raw, filepath, "PSD After Filtering (8-30Hz)")
         plt.show(block=True)
 
     events, event_dict = mne.events_from_annotations(raw, verbose=False)

@@ -57,11 +57,6 @@ def main():
         default="data/files",
         help="Destination root matching the project dataset layout",
     )
-    parser.add_argument(
-        "--force-update",
-        action="store_true",
-        help="Redownload files and refresh local links if they already exist",
-    )
     args = parser.parse_args()
 
     subjects = parse_subjects(args.subjects)
@@ -72,8 +67,7 @@ def main():
     imported_paths = import_eegbci_data(
         subjects=subjects,
         runs=runs,
-        dataset_root=dataset_root,
-        force_update=args.force_update,
+        dataset_root=dataset_root
     )
 
     print("\n--- IMPORT COMPLETE ---")

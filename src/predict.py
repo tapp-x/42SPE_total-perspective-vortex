@@ -35,7 +35,6 @@ def run_playback_prediction(
     dim_red="csp",
     n_components=5,
     max_latency=2.0,
-    verbose=True,
 ):
     """Load a saved model and replay epochs one by one while tracking latency."""
 
@@ -56,11 +55,10 @@ def run_playback_prediction(
     latencies = []
     deadline_misses = 0
 
-    if verbose:
-        print("\n--- Playback prediction ---")
-        print(f"Model: {resolved_model_path}")
-        print(f"Epochs: {X.shape[0]}")
-        print(f"Max latency per chunk: {max_latency:.2f}s")
+    print("\n--- Playback prediction ---")
+    print(f"Model: {resolved_model_path}")
+    print(f"Epochs: {X.shape[0]}")
+    print(f"Max latency per chunk: {max_latency:.2f}s")
 
     for chunk in iter_playback_chunks(X, y):
         start = time.perf_counter()
@@ -73,13 +71,12 @@ def run_playback_prediction(
         if not deadline_ok:
             deadline_misses += 1
 
-        if verbose:
-            status = "True" if pred == chunk.truth else "False"
-            deadline_status = "OK" if deadline_ok else "FAILED"
-            print(
-                f"Chunk {chunk.index:02d}: prediction={pred} truth={chunk.truth} "
-                f"correct={status} latency={latency:.4f}s deadline={deadline_status}"
-            )
+        status = "True" if pred == chunk.truth else "False"
+        deadline_status = "OK" if deadline_ok else "FAILED"
+        print(
+            f"Chunk {chunk.index:02d}: prediction={pred} truth={chunk.truth} "
+            f"correct={status} latency={latency:.4f}s deadline={deadline_status}"
+        )
 
     predictions = np.array(predictions)
     accuracy = accuracy_score(y, predictions)
@@ -87,14 +84,13 @@ def run_playback_prediction(
     observed_max_latency = float(np.max(latencies))
     latency_target_ok = observed_max_latency < max_latency
 
-    if verbose:
-        latency_status = "OK" if latency_target_ok else "FAILED"
-        print("\n--- Summary ---")
-        print(f"Accuracy: {accuracy:.4f}")
-        print(f"Mean latency: {mean_latency:.4f}s")
-        print(f"Max latency:  {observed_max_latency:.4f}s")
-        print(f"Deadline misses: {deadline_misses}/{len(latencies)}")
-        print(f"Latency target ({max_latency:.2f}s): {latency_status}")
+    latency_status = "OK" if latency_target_ok else "FAILED"
+    print("\n--- Summary ---")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Mean latency: {mean_latency:.4f}s")
+    print(f"Max latency:  {observed_max_latency:.4f}s")
+    print(f"Deadline misses: {deadline_misses}/{len(latencies)}")
+    print(f"Latency target ({max_latency:.2f}s): {latency_status}")
 
     return accuracy, mean_latency, observed_max_latency, deadline_misses
 
@@ -131,7 +127,6 @@ def main():
         dim_red=args.dim_red,
         n_components=args.n_components,
         max_latency=args.max_latency,
-        verbose=True,
     )
 
 

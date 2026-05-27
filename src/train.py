@@ -8,7 +8,14 @@ from sklearn.base import clone
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
-from pipeline_config import build_pipeline, default_model_path, parse_runs
+from pipeline_config import (
+    DEFAULT_RANDOM_SEED,
+    DEFAULT_TEST_SIZE,
+    DEFAULT_VAL_SIZE,
+    build_pipeline,
+    default_model_path,
+    parse_runs,
+)
 from preprocessing import load_subject_epochs
 
 
@@ -40,13 +47,12 @@ def train_and_evaluate(
     subject,
     runs,
     base_path=None,
-    test_size=0.2,
-    val_size=0.2,
+    test_size=DEFAULT_TEST_SIZE,
+    val_size=DEFAULT_VAL_SIZE,
     cvs=5,
-    seed=42,
+    seed=DEFAULT_RANDOM_SEED,
     dim_red="csp",
     n_components=5,
-    verbose=True,
 ):
     """Load a subject, score the pipeline, then fit and evaluate the final model."""
 
@@ -59,22 +65,11 @@ def train_and_evaluate(
     if len(classes) < 2:
         raise ValueError(f"Need at least 2 classes to train, found: {classes.tolist()}")
 
-    if verbose:
-        print("\n--- Data summary ---")
-        print(f"X shape (epochs, channels, time): {X.shape}")
-        print(f"y shape: {y.shape}")
-        print(f"Classes: {classes.tolist()}")
-        print(f"Dimensionality reduction: {dim_red}")
-
-    cv_folds = get_valid_stratified_cv_folds(y, cvs)
-    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=seed)
-    pipeline = build_pipeline(dim_red=dim_red, n_components=n_components)
-    cv_scores = cross_val_score(pipeline, X, y, cv=skf, scoring="accuracy")
-
-    if verbose:
-        print("\n--- Cross validation ---")
-        print(f"Scores: {np.round(cv_scores, 4)}")
-        print(f"Mean accuracy: {cv_scores.mean():.4f}")
+    print("\n--- Data summary ---")
+    print(f"X shape (epochs, channels, time): {X.shape}")
+    print(f"y shape: {y.shape}")
+    print(f"Classes: {classes.tolist()}")
+    print(f"Dimensionality reduction: {dim_red}")
 
     X_train_val, X_test, y_train_val, y_test = train_test_split(
         X,
@@ -93,26 +88,31 @@ def train_and_evaluate(
         stratify=y_train_val,
     )
 
-    if verbose:
-        print("\n--- Split ---")
-        print(f"Train: {X_train.shape[0]} epochs")
-        print(f"Val:   {X_val.shape[0]} epochs")
-        print(f"Test:  {X_test.shape[0]} epochs")
+    cv_folds = get_valid_stratified_cv_folds(y_train, cvs)
+    skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=seed)
+    pipeline = build_pipeline(dim_red=dim_red, n_components=n_components)
+    cv_scores = cross_val_score(pipeline, X_train, y_train, cv=skf, scoring="accuracy")
+
+    print("\n--- Split ---")
+    print(f"Train: {X_train.shape[0]} epochs")
+    print(f"Val:   {X_val.shape[0]} epochs")
+    print(f"Test:  {X_test.shape[0]} epochs")
+
+    print("\n--- Cross validation ---")
+    print(f"Scores: {np.round(cv_scores, 4)}")
+    print(f"Mean accuracy: {cv_scores.mean():.4f}")
 
     pipeline.fit(X_train, y_train)
     y_val_pred = pipeline.predict(X_val)
-
     val_acc = accuracy_score(y_val, y_val_pred)
-
     final_pipeline = clone(pipeline)
     final_pipeline.fit(X_train_val, y_train_val)
     y_test_pred = final_pipeline.predict(X_test)
     test_acc = accuracy_score(y_test, y_test_pred)
 
-    if verbose:
-        print("\n--- Holdout metrics ---")
-        print(f"Validation accuracy: {val_acc:.4f}")
-        print(f"Test accuracy:       {test_acc:.4f}")
+    print("\n--- Holdout metrics ---")
+    print(f"Validation accuracy: {val_acc:.4f}")
+    print(f"Test accuracy:       {test_acc:.4f}")
 
     return TrainingResult(
         pipeline=final_pipeline,
@@ -161,15 +161,7 @@ def main():
         help="Runs to use (e.g. 4 8 12) or all",
     )
     parser.add_argument("--path", type=str, default=None, help="Dataset base path")
-    parser.add_argument("--test-size", type=float, default=0.2, help="Test split ratio")
-    parser.add_argument(
-        "--val-size",
-        type=float,
-        default=0.2,
-        help="Validation split ratio on full dataset",
-    )
     parser.add_argument("--cvs", type=int, default=5, help="Cross-validation folds")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--dim-red", choices=["none", "pca", "csp"], default="csp", help="Dimensionality reduction method")
     parser.add_argument("--n-components", type=int, default=5, help="Number of PCA or CSP components")
     parser.add_argument(
@@ -185,13 +177,9 @@ def main():
         subject=args.subject,
         runs=runs,
         base_path=args.path,
-        test_size=args.test_size,
-        val_size=args.val_size,
         cvs=args.cvs,
-        seed=args.seed,
         dim_red=args.dim_red,
         n_components=args.n_components,
-        verbose=True,
     )
 
     if args.model_out is None:
